@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "http://localhost:8081",
+    "target": "https://ims-backend-o8ee.onrender.com",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"

@@ -212,15 +212,112 @@ a:hover {
 }
 
 .hero-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 7px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.16);
-  padding: 7px 12px;
+
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
+
+  color: #ecfffb;
+
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.28),
+    rgba(255,255,255,0.06)
+  );
+
+  border: 1px solid rgba(255,255,255,0.35);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    inset 0 -1px 0 rgba(0,0,0,0.08),
+    0 6px 14px rgba(0,0,0,0.18);
+
+  overflow: hidden;
+  transition: all .3s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Hover = premium lift */
+.hero-chip:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    0 10px 22px rgba(0,0,0,0.25),
+    0 0 12px rgba(255,255,255,0.25);
+}
+
+/* moving light sweep (luxury effect) */
+.hero-chip::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 120%;
+  height: 100%;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.5),
+    transparent
+  );
+
+  transform: skewX(-20deg);
+  transition: left .6s ease;
+}
+
+.hero-chip:hover::after {
+  left: 120%;
+}
+
+/* subtle glowing border */
+.hero-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.7),
+    transparent
+  );
+
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.hero-chip:hover::before {
+  opacity: 1;
+}
+
+/* optional floating animation */
+@keyframes chipFloat {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.hero-chip.float {
+  animation: chipFloat 4s ease-in-out infinite;
 }
 
 .card {
