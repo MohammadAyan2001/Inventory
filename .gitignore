@@ -1,0 +1,20 @@
+# Workspace noise
+.DS_Store
+*.log
+*.tmp
+
+# Frontend build artifacts
+ims-frontend/node_modules/
+ims-frontend/dist/
+ims-frontend/.angular/
+
+# Backend build artifacts
+ims-backend/target/
+
+# Env files
+.env
+.env.*
+
+# IDE state
+.idea/
+.vscode/

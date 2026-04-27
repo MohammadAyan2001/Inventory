@@ -1,0 +1,414 @@
+{
+  "info": {
+    "name": "IMS - Inventory Management System",
+    "description": "Complete API collection for the Inventory Management System.\n\n**Setup:**\n1. Import this collection\n2. Set `baseUrl` variable to `http://localhost:8080`\n3. Run `POST /auth/login` — the token is auto-saved to `{{token}}`\n4. All subsequent requests use `{{token}}` automatically",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "token",   "value": "", "type": "string" },
+    { "key": "vendorId",    "value": "", "type": "string" },
+    { "key": "warehouseId", "value": "", "type": "string" },
+    { "key": "productId",   "value": "", "type": "string" },
+    { "key": "inventoryId", "value": "", "type": "string" },
+    { "key": "orderRef",    "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@test.com\",\n  \"password\": \"Secret@123\",\n  \"role\": \"VENDOR\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) {",
+              "  const token = pm.response.json().data.token;",
+              "  pm.collectionVariables.set('token', token);",
+              "  console.log('Token saved:', token.substring(0,20) + '...');",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ims.com\",\n  \"password\": \"Admin@1234\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 200) {",
+              "  const token = pm.response.json().data.token;",
+              "  pm.collectionVariables.set('token', token);",
+              "  console.log('Admin token saved');",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "Login (Vendor)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@test.com\",\n  \"password\": \"Secret@123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 200) {",
+              "  pm.collectionVariables.set('token', pm.response.json().data.token);",
+              "}"
+            ]}
+          }]
+        }
+      ]
+    },
+    {
+      "name": "🏢 Vendors",
+      "item": [
+        {
+          "name": "Create Vendor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/vendors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Supplies\",\n  \"email\": \"acme@supplies.com\",\n  \"phone\": \"+1-555-0100\",\n  \"address\": \"123 Industrial Ave, New York\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('vendorId', pm.response.json().data.id);",
+              "  console.log('vendorId saved:', pm.collectionVariables.get('vendorId'));",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "List Vendors",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vendors?page=0&size=20",
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "name", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vendor by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/vendors/{{vendorId}}"
+          }
+        },
+        {
+          "name": "Update Vendor",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/vendors/{{vendorId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Supplies Updated\",\n  \"email\": \"acme@supplies.com\",\n  \"phone\": \"+1-555-0199\",\n  \"address\": \"456 Commerce Blvd, New York\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Vendor",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/vendors/{{vendorId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏭 Warehouses",
+      "item": [
+        {
+          "name": "Create Warehouse",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/warehouses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Main Warehouse\",\n  \"location\": \"New York, NY\",\n  \"capacity\": 10000\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('warehouseId', pm.response.json().data.id);",
+              "  console.log('warehouseId saved:', pm.collectionVariables.get('warehouseId'));",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "List Warehouses",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/warehouses?page=0&size=20"
+          }
+        },
+        {
+          "name": "Get Warehouse by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/warehouses/{{warehouseId}}"
+          }
+        },
+        {
+          "name": "Update Warehouse",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/warehouses/{{warehouseId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Main Warehouse East\",\n  \"location\": \"Brooklyn, NY\",\n  \"capacity\": 15000\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Warehouse",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/warehouses/{{warehouseId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laptop Pro 15\",\n  \"sku\": \"LAP-PRO-15\",\n  \"description\": \"High-performance laptop\",\n  \"category\": \"Electronics\",\n  \"price\": 1299.99,\n  \"vendorId\": \"{{vendorId}}\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('productId', pm.response.json().data.id);",
+              "  console.log('productId saved:', pm.collectionVariables.get('productId'));",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products?page=0&size=20",
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "category", "value": "Electronics", "disabled": true },
+                { "key": "name", "value": "laptop", "disabled": true },
+                { "key": "vendorId", "value": "{{vendorId}}", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/products/{{productId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laptop Pro 15 v2\",\n  \"sku\": \"LAP-PRO-15\",\n  \"description\": \"Updated high-performance laptop\",\n  \"category\": \"Electronics\",\n  \"price\": 1199.99,\n  \"vendorId\": \"{{vendorId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/products/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏪 Inventory",
+      "item": [
+        {
+          "name": "Create Inventory Record",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/inventory",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"warehouseId\": \"{{warehouseId}}\",\n  \"quantity\": 500,\n  \"reorderLevel\": 50\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('inventoryId', pm.response.json().data.id);",
+              "  console.log('inventoryId saved:', pm.collectionVariables.get('inventoryId'));",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "Get Inventory by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/inventory/{{inventoryId}}"
+          }
+        },
+        {
+          "name": "Get Stock by Product",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/inventory/product/{{productId}}"
+          }
+        },
+        {
+          "name": "Get Low Stock Items",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/inventory/low-stock"
+          }
+        },
+        {
+          "name": "Restock Inventory",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/{{inventoryId}}/restock?quantity=200",
+              "query": [{ "key": "quantity", "value": "200" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛒 Orders",
+      "item": [
+        {
+          "name": "Place Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotencyKey\": \"{{$guid}}\",\n  \"warehouseId\": \"{{warehouseId}}\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 2\n    }\n  ]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('orderRef', pm.response.json().data.orderReference);",
+              "  console.log('orderRef saved:', pm.collectionVariables.get('orderRef'));",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "Place Order (Idempotency Test - same key)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotencyKey\": \"FIXED-KEY-FOR-IDEMPOTENCY-TEST\",\n  \"warehouseId\": \"{{warehouseId}}\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Order by Reference",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/orders/{{orderRef}}"
+          }
+        },
+        {
+          "name": "Get My Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/orders/my?page=0&size=20"
+          }
+        },
+        {
+          "name": "Get All Orders (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders?page=0&size=20",
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "status", "value": "RESERVED", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/orders/{{orderRef}}/cancel"
+          }
+        }
+      ]
+    }
+  ]
+}
