@@ -3,20 +3,13 @@
     {
       "source": "/api/v1/:path*",
       "destination": "https://inventory-kx0o.onrender.com/api/v1/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ],
-  "headers": [
+  "routes": [
+    { "handle": "filesystem" },
     {
-      "source": "/api/v1/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin",  "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,PATCH,DELETE,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Authorization,Content-Type,Accept,X-Tenant-ID" }
-      ]
+      "src": "/.*",
+      "dest": "/index.html"
     }
   ]
 }
