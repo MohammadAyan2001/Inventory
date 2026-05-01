@@ -1,15 +1,13 @@
 {
+  "outputDirectory": "dist/ims-frontend/browser",
   "rewrites": [
     {
       "source": "/api/v1/:path*",
       "destination": "https://inventory-kx0o.onrender.com/api/v1/:path*"
-    }
-  ],
-  "routes": [
-    { "handle": "filesystem" },
+    },
     {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
