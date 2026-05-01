@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -22,17 +24,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Redis caching configuration.
+ * Cache configuration with two modes:
  *
- * Strategy: Read-through caching via Spring @Cacheable.
- * - On cache miss, the service fetches from DB and populates the cache.
- * - On write/update, @CacheEvict invalidates the entry so the next read
- *   fetches fresh data (write-invalidate pattern).
+ * app.redis.enabled=true  → Redis-backed cache with per-cache TTLs
+ * app.redis.enabled=false → In-memory ConcurrentMapCache (no TTL, suitable for Render free tier)
  *
- * TTLs are per-cache to balance freshness vs. DB load:
- * - Products: 5 min (changes infrequently)
- * - Inventory: 2 min (changes on every order)
- * - Vendors/Warehouses: 10 min (rarely change)
+ * All @Cacheable / @CacheEvict annotations in services work identically
+ * in both modes — only the backing store changes.
  */
 @Configuration
 @EnableCaching
@@ -47,29 +45,34 @@ public class RedisConfig {
     @Value("${app.cache.vendor-ttl:600}")
     private long vendorTtl;
 
+    // ── Redis CacheManager (only when Redis is enabled) ───────────────────────
+
     @Bean
+    @ConditionalOnProperty(name = "app.redis.enabled", havingValue = "true")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper()));
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()));
         template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper()));
+        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()));
         return template;
     }
 
     @Bean
-    public CacheManager cacheManager(RedisConnectionFactory factory) {
+    @ConditionalOnProperty(name = "app.redis.enabled", havingValue = "true")
+    public CacheManager redisCacheManager(RedisConnectionFactory factory) {
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
-                new GenericJackson2JsonRedisSerializer(objectMapper())))
+            .serializeKeysWith(RedisSerializationContext.SerializationPair
+                .fromSerializer(new StringRedisSerializer()))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair
+                .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper())))
             .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
-        cacheConfigs.put("products", defaultConfig.entryTtl(Duration.ofSeconds(productTtl)));
-        cacheConfigs.put("inventory", defaultConfig.entryTtl(Duration.ofSeconds(120)));
-        cacheConfigs.put("vendors", defaultConfig.entryTtl(Duration.ofSeconds(vendorTtl)));
+        cacheConfigs.put("products",   defaultConfig.entryTtl(Duration.ofSeconds(productTtl)));
+        cacheConfigs.put("inventory",  defaultConfig.entryTtl(Duration.ofSeconds(120)));
+        cacheConfigs.put("vendors",    defaultConfig.entryTtl(Duration.ofSeconds(vendorTtl)));
         cacheConfigs.put("warehouses", defaultConfig.entryTtl(Duration.ofSeconds(warehouseTtl)));
 
         return RedisCacheManager.builder(factory)
@@ -78,7 +81,15 @@ public class RedisConfig {
             .build();
     }
 
-    private ObjectMapper objectMapper() {
+    // ── In-memory CacheManager fallback (Redis disabled) ─────────────────────
+
+    @Bean
+    @ConditionalOnProperty(name = "app.redis.enabled", havingValue = "false", matchIfMissing = true)
+    public CacheManager inMemoryCacheManager() {
+        return new ConcurrentMapCacheManager("products", "inventory", "vendors", "warehouses");
+    }
+
+    private ObjectMapper redisObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.activateDefaultTyping(

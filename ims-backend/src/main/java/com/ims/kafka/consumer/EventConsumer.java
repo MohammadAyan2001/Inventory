@@ -3,6 +3,7 @@ package com.ims.kafka.consumer;
 import com.ims.kafka.InventoryUpdateEvent;
 import com.ims.kafka.OrderPlacedEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -10,18 +11,13 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 /**
- * Kafka consumers for IMS events.
- *
- * Consumer group "ims-group" ensures each message is processed by exactly
- * one instance when the app is horizontally scaled — Kafka distributes
- * partitions across group members.
- *
- * In a real microservices setup these would live in separate services
- * (e.g., notification-service, analytics-service). Here they demonstrate
- * the pattern within the monolith.
+ * Kafka consumer — only active when app.kafka.enabled=true.
+ * When Kafka is disabled (e.g. on Render free tier), this bean is not
+ * created so no KafkaListenerContainerFactory is required.
  */
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true")
 public class EventConsumer {
 
     @KafkaListener(
@@ -36,10 +32,6 @@ public class EventConsumer {
     ) {
         log.info("Consumed OrderPlacedEvent: order={}, status={}, partition={}, offset={}",
             event.getOrderReference(), event.getStatus(), partition, offset);
-
-        // In production: trigger email notification, update analytics, etc.
-        // Idempotency: check eventId in a processed-events store before acting
-        processOrderEvent(event);
     }
 
     @KafkaListener(
@@ -55,18 +47,5 @@ public class EventConsumer {
         log.info("Consumed InventoryUpdateEvent: product={}, type={}, qty={}->{}, partition={}, offset={}",
             event.getProductSku(), event.getUpdateType(),
             event.getPreviousQuantity(), event.getNewQuantity(), partition, offset);
-
-        // In production: trigger reorder if newQuantity is below threshold
-        processInventoryEvent(event);
-    }
-
-    private void processOrderEvent(OrderPlacedEvent event) {
-        // Placeholder: send notification, update reporting DB, etc.
-        log.debug("Processing order event for reference={}", event.getOrderReference());
-    }
-
-    private void processInventoryEvent(InventoryUpdateEvent event) {
-        // Placeholder: trigger auto-reorder if stock is critically low
-        log.debug("Processing inventory event for product={}", event.getProductSku());
     }
 }
