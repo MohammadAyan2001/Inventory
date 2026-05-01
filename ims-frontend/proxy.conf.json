@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "https://ims-backend-o8ee.onrender.com",
+    "target": "https://inventory-kx0o.onrender.com",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
